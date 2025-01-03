@@ -17,7 +17,6 @@ program
   .requiredOption('-k, --keypair <path>', 'Path to keypair file')
   .requiredOption('-b, --bucket <bucket>', 'Bucket identifier')
   .requiredOption('-f, --file <path>', 'Path to file to upload')
-  .option('-d, --directory <path>', 'Directory path within bucket')
   .action(async (options) => {
     try {
       // Load keypair
@@ -26,16 +25,17 @@ program
 
       // Initialize SDK
       const sdk = new ShdwDriveSDK(
-        { endpoint: process.env.SHDW_ENDPOINT || 'https://shadow-storage.genesysgo.net' },
+        { endpoint: process.env.SHDW_ENDPOINT || 'https://v2.shdwdrive.com' },
         { keypair }
       );
 
-      // Read file
-      const file = new File([readFileSync(options.file)], options.file.split('/').pop()!);
-
+      // Read file and create File object
+      const fileBuffer = readFileSync(options.file);
+      const fileName = options.file.split('/').pop()!;
+      const file = new File([fileBuffer], fileName);
+      
       console.log('Starting upload...');
       const result = await sdk.uploadFile(options.bucket, file, {
-        directory: options.directory,
         onProgress: (progress) => {
           process.stdout.write(`Upload progress: ${progress.progress.toFixed(2)}%\r`);
         },
@@ -63,15 +63,24 @@ program
 
       // Initialize SDK
       const sdk = new ShdwDriveSDK(
-        { endpoint: process.env.SHDW_ENDPOINT || 'https://shadow-storage.genesysgo.net' },
+        { endpoint: process.env.SHDW_ENDPOINT || 'https://v2.shdwdrive.com' },
         { keypair }
       );
 
-      console.log('Deleting file...');
+      console.log('Attempting to delete file...');
+      console.log('Bucket:', options.bucket);
+      console.log('File URL:', options.file);
+      
       const result = await sdk.deleteFile(options.bucket, options.file);
 
-      console.log('Delete complete!');
-      console.log('Message:', result.message);
+      if (result.success) {
+        console.log('\nDelete operation successful');
+        console.log('Server response:', result.message);
+      } else {
+        console.log('\nDelete operation failed');
+        console.log('Reason:', result.message);
+        process.exit(1);
+      }
     } catch (error) {
       console.error('Error deleting file:', error);
       process.exit(1);

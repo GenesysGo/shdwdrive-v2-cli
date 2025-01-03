@@ -15,17 +15,17 @@ interface FileUploadProgress {
   progress: number;
 }
 
-interface ShadowDriveConfig {
+interface ShdwDriveConfig {
   endpoint: string;
 }
 
-export class ShadowDriveSDK {
+export class ShdwDriveSDK {
   private endpoint: string;
   private wallet?: WalletAdapter;
   private keypair?: Keypair;
 
   constructor(
-    config: ShadowDriveConfig,
+    config: ShdwDriveConfig,
     auth: { wallet: WalletAdapter } | { keypair: Keypair }
   ) {
     this.endpoint = config.endpoint;
@@ -65,10 +65,9 @@ export class ShadowDriveSDK {
     file: File,
     options: {
       onProgress?: (progress: FileUploadProgress) => void;
-      directory?: string;
     } = {}
   ): Promise<{ finalized_location: string }> {
-    const { onProgress, directory = '' } = options;
+    const { onProgress } = options;
     const updateProgress = (progress: number) => {
       onProgress?.({
         status: 'uploading',
@@ -77,10 +76,12 @@ export class ShadowDriveSDK {
     };
 
     try {
-      if (file.size <= 5 * 1024 * 1024) {
-        return await this.uploadSmallFile(bucket, file, directory, updateProgress);
+      if (file.size <= CHUNK_SIZE) {
+        console.log('Starting regular file upload...');
+        return await this.uploadSmallFile(bucket, file, updateProgress);
       } else {
-        return await this.uploadLargeFile(bucket, file, directory, updateProgress);
+        console.log('File size > 5MB, initiating multipart upload...');
+        return await this.uploadLargeFile(bucket, file, updateProgress);
       }
     } catch (error) {
       onProgress?.({
@@ -94,17 +95,13 @@ export class ShadowDriveSDK {
   private async uploadSmallFile(
     bucket: string,
     file: File,
-    directory: string,
     onProgress?: (progress: number) => void
   ): Promise<{ finalized_location: string }> {
-    // Create hash of filename for message signing
     const fileNamesHash = SHA256(file.name).toString();
+    console.log('Message to sign:', `Shadow Drive Signed Message:\nStorage Account: ${bucket}\nUpload file with hash: ${fileNamesHash}`);
 
     // Create and sign message
-    const messageToSign = `Shadow Drive Signed Message:
-Storage Account: ${bucket}
-Upload file with hash: ${fileNamesHash}`;
-
+    const messageToSign = `Shadow Drive Signed Message:\nStorage Account: ${bucket}\nUpload file with hash: ${fileNamesHash}`;
     const signature = await this.signMessage(messageToSign);
     const signer = this.getSigner();
 
@@ -114,7 +111,6 @@ Upload file with hash: ${fileNamesHash}`;
     formData.append('message', signature);
     formData.append('signer', signer);
     formData.append('storage_account', bucket);
-    formData.append('directory', directory);
 
     const response = await fetch(`${this.endpoint}/v1/object/upload`, {
       method: 'POST',
@@ -122,8 +118,22 @@ Upload file with hash: ${fileNamesHash}`;
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Upload failed');
+      const contentType = response.headers.get('content-type');
+      let errorMessage = 'Upload failed';
+      
+      try {
+        if (contentType?.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.error || error.message || 'Upload failed';
+        } else {
+          const text = await response.text();
+          errorMessage = `Upload failed - Status: ${response.status}, Response: ${text.slice(0, 200)}...`;
+        }
+      } catch (e) {
+        errorMessage = `Upload failed - Status: ${response.status}, Error parsing response`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -132,16 +142,10 @@ Upload file with hash: ${fileNamesHash}`;
   private async uploadLargeFile(
     bucket: string,
     file: File,
-    directory: string,
     onProgress?: (progress: number) => void
   ): Promise<{ finalized_location: string }> {
     // Initialize multipart upload
-    const initMessage = `Shadow Drive Signed Message:
-Initialize multipart upload
-Bucket: ${bucket}
-Filename: ${directory}${file.name}
-File size: ${file.size}`;
-
+    const initMessage = `Shadow Drive Signed Message:\nInitialize multipart upload\nBucket: ${bucket}\nFilename: ${file.name}\nFile size: ${file.size}`;
     const signature = await this.signMessage(initMessage);
     const signer = this.getSigner();
 
@@ -152,7 +156,7 @@ File size: ${file.size}`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bucket,
-          filename: `${directory}${file.name}`,
+          filename: file.name,
           message: signature,
           signer,
           size: file.size,
@@ -181,7 +185,7 @@ File size: ${file.size}`;
       formData.append('bucket', bucket);
       formData.append('uploadId', uploadId);
       formData.append('partNumber', partNumber.toString());
-      formData.append('key', `${directory}${file.name}`);
+      formData.append('key', key);
       formData.append('signer', signer);
 
       const response = await fetch(
@@ -229,12 +233,63 @@ File size: ${file.size}`;
     return completeResponse.json();
   }
 
-  async deleteFile(bucket: string, fileUrl: string): Promise<{ message: string }> {
+  private async fileExists(bucket: string, filename: string): Promise<boolean> {
+    const signer = this.getSigner();
+    
+    try {
+      const response = await fetch(`${this.endpoint}/v1/object/list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bucket,
+          owner: signer
+        }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      return data.objects?.some((obj: any) => obj.key === filename) ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async deleteFile(bucket: string, fileUrl: string): Promise<{ message: string; success: boolean }> {
+    // Extract filename from URL if full URL is provided
+    let filename = fileUrl;
+    try {
+      const url = new URL(fileUrl);
+      const parts = url.pathname.split('/');
+      const bucketIndex = parts.findIndex(part => part === bucket);
+      if (bucketIndex !== -1 && parts.length > bucketIndex + 1) {
+        filename = parts.slice(bucketIndex + 1).join('/');
+      }
+    } catch (e) {
+      // If not a URL, assume it's already a filename
+      console.log('Using provided filename:', filename);
+    }
+
+    // Check if file exists first
+    const exists = await this.fileExists(bucket, filename);
+    if (!exists) {
+      return {
+        message: 'File does not exist or has already been deleted',
+        success: false
+      };
+    }
+
+    console.log('Using filename for deletion:', filename);
+
+    // Create message with exact formatting
     const message = `Shadow Drive Signed Message:
 Delete file
 Bucket: ${bucket}
-Filename: ${fileUrl}`;
+Filename: ${filename}`;
 
+    console.log('Signing delete message:', message);
     const signature = await this.signMessage(message);
     const signer = this.getSigner();
 
@@ -243,43 +298,27 @@ Filename: ${fileUrl}`;
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         bucket,
-        filename: fileUrl,
+        filename,
         message: signature,
         signer,
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to delete file');
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (e) {
+      throw new Error('Failed to parse server response');
     }
 
-    return response.json();
+    if (!response.ok) {
+      throw new Error(responseData.error || 'Delete failed');
+    }
+
+    // For successful deletions
+    return {
+      message: responseData.message || 'File deleted successfully',
+      success: true
+    };
   }
 }
-
-// Usage example:
-/*
-// With wallet adapter
-const wallet = // ... your wallet adapter implementation
-const sdk = new ShadowDriveSDK(
-  { endpoint: 'https://shadow-storage.example.com' },
-  { wallet }
-);
-
-// With keypair
-const keypair = Keypair.generate(); // or load your keypair
-const sdk = new ShadowDriveSDK(
-  { endpoint: 'https://shadow-storage.example.com' },
-  { keypair }
-);
-
-// Upload a file
-const result = await sdk.uploadFile('your-bucket', file, {
-  onProgress: (progress) => console.log(`Upload progress: ${progress.progress}%`),
-  directory: 'optional/directory/path/'
-});
-
-// Delete a file
-await sdk.deleteFile('your-bucket', 'file-url-or-path');
-*/
