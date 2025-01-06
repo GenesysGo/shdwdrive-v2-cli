@@ -24,7 +24,7 @@ npm link
 
 The CLI uses environment variables for configuration:
 
-- `SHDW_ENDPOINT`: The Shadow Drive API endpoint (defaults to https://shadow-storage.genesysgo.net)
+- `SHDW_ENDPOINT`: The Shadow Drive API endpoint (defaults to https://v2.shdwdrive.com/v1)
 
 ## Usage
 
