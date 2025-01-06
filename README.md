@@ -13,8 +13,8 @@ npm install -g shdw-drive-cli
 Or use it directly from the repository:
 
 ```bash
-git clone https://github.com/yourusername/shdw-drive-cli.git
-cd shdw-drive-cli
+git clone https://github.com/genesysgo/shdwdrive-v2-cli.git
+cd shdwdrive-v2-cli
 npm install
 npm run build
 npm link
@@ -51,12 +51,12 @@ shdw-drive delete \
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/shdw-drive-cli.git
+git clone https://github.com/genesysgo/shdwdrive-v2-cli.git
 ```
 
 2. Install dependencies:
 ```bash
-cd shdw-drive-cli
+cd shdwdrive-v2-cli
 npm install
 ```
 
