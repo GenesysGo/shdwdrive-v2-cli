@@ -98,10 +98,10 @@ export class ShdwDriveSDK {
     onProgress?: (progress: number) => void
   ): Promise<{ finalized_location: string }> {
     const fileNamesHash = SHA256(file.name).toString();
-    console.log('Message to sign:', `Shadow Drive Signed Message:\nStorage Account: ${bucket}\nUpload file with hash: ${fileNamesHash}`);
+    console.log('Message to sign:', `shdwDrive Signed Message:\nStorage Account: ${bucket}\nUpload file with hash: ${fileNamesHash}`);
 
     // Create and sign message
-    const messageToSign = `Shadow Drive Signed Message:\nStorage Account: ${bucket}\nUpload file with hash: ${fileNamesHash}`;
+    const messageToSign = `shdwDrive Signed Message:\nStorage Account: ${bucket}\nUpload file with hash: ${fileNamesHash}`;
     const signature = await this.signMessage(messageToSign);
     const signer = this.getSigner();
 
@@ -145,7 +145,7 @@ export class ShdwDriveSDK {
     onProgress?: (progress: number) => void
   ): Promise<{ finalized_location: string }> {
     // Initialize multipart upload
-    const initMessage = `Shadow Drive Signed Message:\nInitialize multipart upload\nBucket: ${bucket}\nFilename: ${file.name}\nFile size: ${file.size}`;
+    const initMessage = `shdwDrive Signed Message:\nInitialize multipart upload\nBucket: ${bucket}\nFilename: ${file.name}\nFile size: ${file.size}`;
     const signature = await this.signMessage(initMessage);
     const signer = this.getSigner();
 
@@ -284,7 +284,7 @@ export class ShdwDriveSDK {
     console.log('Using filename for deletion:', filename);
 
     // Create message with exact formatting
-    const message = `Shadow Drive Signed Message:
+    const message = `shdwDrive Signed Message:
 Delete file
 Bucket: ${bucket}
 Filename: ${filename}`;
