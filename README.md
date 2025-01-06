@@ -1,6 +1,6 @@
-# Shadow Drive CLI
+# shdwDrive CLI
 
-A command-line interface for interacting with Shadow Drive storage.
+A command-line interface for interacting with shdwDrive storage.
 
 ## Installation
 
@@ -24,7 +24,7 @@ npm link
 
 The CLI uses environment variables for configuration:
 
-- `SHDW_ENDPOINT`: The Shadow Drive API endpoint (defaults to https://v2.shdwdrive.com/v1)
+- `SHDW_ENDPOINT`: The shdwDrive API endpoint (defaults to https://v2.shdwdrive.com/v1)
 
 ## Usage
 
