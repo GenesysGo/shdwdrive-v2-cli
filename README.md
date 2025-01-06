@@ -47,6 +47,22 @@ shdw-drive delete \
   --file file-url-or-path
 ```
 
+### List files in a bucket
+
+```bash
+shdw-drive list \
+  --keypair ~/.config/solana/id.json \
+  --bucket your-bucket-identifier
+```
+
+### Check bucket storage usage
+
+```bash
+shdw-drive usage \
+  --keypair ~/.config/solana/id.json \
+  --bucket your-bucket-identifier
+```
+
 ## Development
 
 1. Clone the repository:

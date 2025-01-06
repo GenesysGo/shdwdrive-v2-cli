@@ -19,6 +19,19 @@ interface ShdwDriveConfig {
   endpoint: string;
 }
 
+interface BucketUsageResponse {
+  bucket: string;
+  storage_used: number;
+}
+
+interface ListFilesResponse {
+  objects: Array<{
+    key: string;
+    size: number;
+    lastModified: string;
+  }>;
+}
+
 export class ShdwDriveSDK {
   private endpoint: string;
   private wallet?: WalletAdapter;
@@ -320,5 +333,44 @@ Filename: ${filename}`;
       message: responseData.message || 'File deleted successfully',
       success: true
     };
+  }
+
+  async listFiles(bucket: string): Promise<ListFilesResponse['objects']> {
+    const owner = this.getSigner();
+
+    const response = await fetch(`${this.endpoint}/v1/object/list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bucket,
+        owner  
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to list files');
+    }
+
+    const data = await response.json();
+    return data.objects || [];
+  }
+
+  async getBucketUsage(bucket: string): Promise<BucketUsageResponse> {
+    try {
+      const response = await fetch(`${this.endpoint}/v1/bucket/usage?bucket=${bucket}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(typeof errorData.error === 'string' ? errorData.error : 'Failed to get bucket usage');
+      }
+
+      return await response.json();
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : 'Unknown error occurred');
+    }
   }
 }

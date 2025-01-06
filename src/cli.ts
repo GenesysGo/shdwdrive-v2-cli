@@ -87,4 +87,75 @@ program
     }
   });
 
+  program
+  .command('list')
+  .description('List all files in a Shadow Drive bucket')
+  .requiredOption('-k, --keypair <path>', 'Path to keypair file')
+  .requiredOption('-b, --bucket <bucket>', 'Bucket identifier')
+  .action(async (options) => {
+    try {
+      // Load keypair
+      const keypairData = JSON.parse(readFileSync(options.keypair, 'utf-8'));
+      const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
+
+      // Initialize SDK
+      const sdk = new ShdwDriveSDK(
+        { endpoint: process.env.SHDW_ENDPOINT || 'https://v2.shdwdrive.com' },
+        { keypair }
+      );
+
+      console.log('Fetching files from bucket:', options.bucket);
+      const files = await sdk.listFiles(options.bucket);
+
+      console.log('\nFiles in bucket:');
+      if (files.length === 0) {
+        console.log('No files found');
+      } else {
+        files.forEach(file => {
+          const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+          console.log(`- ${file.key}`);
+          console.log(`  Size: ${sizeInMB} MB`);
+          console.log(`  Last Modified: ${new Date(file.lastModified).toLocaleString()}`);
+          console.log('');
+        });
+      }
+    } catch (error) {
+      console.error('Error listing files:', error);
+      process.exit(1);
+    }
+  });
+
+  program
+  .command('usage')
+  .description('Get storage usage for a Shadow Drive bucket')
+  .requiredOption('-k, --keypair <path>', 'Path to keypair file')
+  .requiredOption('-b, --bucket <bucket>', 'Bucket identifier')
+  .action(async (options) => {
+    try {
+      const keypairData = JSON.parse(readFileSync(options.keypair, 'utf-8'));
+      const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
+
+      const sdk = new ShdwDriveSDK(
+        { endpoint: process.env.SHDW_ENDPOINT || 'https://v2.shdwdrive.com' },
+        { keypair }
+      );
+
+      const usage = await sdk.getBucketUsage(options.bucket);
+
+      console.log('\nBucket Usage:');
+      console.log(`Bucket: ${usage.bucket}`);
+      const usedMB = (usage.storage_used / (1024 * 1024)).toFixed(2);
+      console.log(`Storage Used: ${usedMB} MB`);
+
+      if (usage.storage_used > 1024 * 1024 * 1024) {
+        const usedGB = (usage.storage_used / (1024 * 1024 * 1024)).toFixed(2);
+        console.log(`Storage Used: ${usedGB} GB`);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      console.error('Error getting bucket usage:', errorMessage);
+      process.exit(1);
+    }
+  });
+
 program.parse();
