@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/shdwdrive-logo.svg" alt="ShdwDrive Logo" width="600"/>
+</p>
+
 # shdwDrive CLI
 
 A command-line interface for interacting with shdwDrive storage.
@@ -88,4 +92,4 @@ npm link
 
 ## License
 
-MIT
+See the LICENSE file for details.

@@ -2,7 +2,7 @@
 import { Command } from 'commander';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
-import { ShdwDriveSDK } from './sdk/shdw-drive';
+import { ShdwDriveSDK } from '@shdw-drive/sdk';
 
 const program = new Command();
 
@@ -11,7 +11,7 @@ program
   .description('CLI tool for Shadow Drive file operations')
   .version('1.0.0');
 
-program
+  program
   .command('upload')
   .description('Upload a file to Shadow Drive')
   .requiredOption('-k, --keypair <path>', 'Path to keypair file')
@@ -23,7 +23,9 @@ program
       const keypairData = JSON.parse(readFileSync(options.keypair, 'utf-8'));
       const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
 
-      // Initialize SDK
+      // Initialize SDK with more verbose logging
+      console.log('Initializing SDK with keypair:', keypair.publicKey.toString());
+      
       const sdk = new ShdwDriveSDK(
         { endpoint: process.env.SHDW_ENDPOINT || 'https://v2.shdwdrive.com' },
         { keypair }
@@ -35,6 +37,9 @@ program
       const file = new File([fileBuffer], fileName);
       
       console.log('Starting upload...');
+      console.log('Bucket:', options.bucket);
+      console.log('File:', fileName);
+      
       const result = await sdk.uploadFile(options.bucket, file, {
         onProgress: (progress) => {
           process.stdout.write(`Upload progress: ${progress.progress.toFixed(2)}%\r`);
@@ -45,6 +50,10 @@ program
       console.log('File location:', result.finalized_location);
     } catch (error) {
       console.error('Error uploading file:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+        console.error('Stack trace:', error.stack);
+      }
       process.exit(1);
     }
   });
@@ -123,8 +132,6 @@ program
       console.error('Error listing files:', error);
       process.exit(1);
     }
-  });
-
   program
   .command('usage')
   .description('Get storage usage for a Shadow Drive bucket')
@@ -156,6 +163,8 @@ program
       console.error('Error getting bucket usage:', errorMessage);
       process.exit(1);
     }
+  });
+
   });
 
 program.parse();

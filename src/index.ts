@@ -1,6 +1,2 @@
-import { ShdwDriveSDK } from './sdk/shdw-drive';
-export * from './types';
+import { ShdwDriveSDK } from '@shdw-drive/sdk';
 export { ShdwDriveSDK };
-
-// Default export for convenience
-export default ShdwDriveSDK;
