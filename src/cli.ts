@@ -3,6 +3,8 @@ import { Command } from 'commander';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import { ShdwDriveSDK } from '@shdw-drive/sdk';
+import chalk from 'chalk';
+
 
 const program = new Command();
 
@@ -36,23 +38,23 @@ program
       const fileName = options.file.split('/').pop()!;
       const file = new File([fileBuffer], fileName);
       
-      console.log('Starting upload...');
-      console.log('Bucket:', options.bucket);
-      console.log('File:', fileName);
+      console.log(chalk.cyan('\nStarting upload...'));
+      console.log(chalk.dim('Bucket:'), chalk.yellow(options.bucket));
+      console.log(chalk.dim('File:'), chalk.yellow(fileName));
       
       const result = await sdk.uploadFile(options.bucket, file, {
         onProgress: (progress) => {
-          process.stdout.write(`Upload progress: ${progress.progress.toFixed(2)}%\r`);
+          process.stdout.write(chalk.blue(`Upload progress: ${progress.progress.toFixed(2)}%\r`));
         },
       });
 
-      console.log('\nUpload complete!');
-      console.log('File location:', result.finalized_location);
+      console.log(chalk.green('\n✓ Upload complete!'));
+      console.log(chalk.dim('File location:'), chalk.cyan(result.finalized_location));
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error(chalk.red('Error uploading file:'), error);
       if (error instanceof Error) {
-        console.error('Error details:', error.message);
-        console.error('Stack trace:', error.stack);
+        console.error(chalk.red('Error details:'), error.message);
+        console.error(chalk.dim('Stack trace:'), error.stack);
       }
       process.exit(1);
     }
@@ -76,22 +78,22 @@ program
         { keypair }
       );
 
-      console.log('Attempting to delete file...');
-      console.log('Bucket:', options.bucket);
-      console.log('File URL:', options.file);
+      console.log(chalk.cyan('\nAttempting to delete file...'));
+      console.log(chalk.dim('Bucket:'), chalk.yellow(options.bucket));
+      console.log(chalk.dim('File URL:'), chalk.yellow(options.file));
       
       const result = await sdk.deleteFile(options.bucket, options.file);
 
       if (result.success) {
-        console.log('\nDelete operation successful');
-        console.log('Server response:', result.message);
+        console.log(chalk.green('\n✓ Delete operation successful'));
+        console.log(chalk.dim('Server response:'), chalk.cyan(result.message));
       } else {
-        console.log('\nDelete operation failed');
-        console.log('Reason:', result.message);
+        console.log(chalk.red('\n✗ Delete operation failed'));
+        console.log(chalk.dim('Reason:'), chalk.red(result.message));
         process.exit(1);
       }
     } catch (error) {
-      console.error('Error deleting file:', error);
+      console.error(chalk.red('Error deleting file:'), error);
       process.exit(1);
     }
   });
@@ -113,25 +115,27 @@ program
         { keypair }
       );
 
-      console.log('Fetching files from bucket:', options.bucket);
+      console.log(chalk.cyan('\nFetching files from bucket:'), chalk.yellow(options.bucket));
       const files = await sdk.listFiles(options.bucket);
 
-      console.log('\nFiles in bucket:');
+      console.log(chalk.bold('\nFiles in bucket:'));
       if (files.length === 0) {
-        console.log('No files found');
+        console.log(chalk.red('No files found'));
       } else {
         files.forEach(file => {
           const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-          console.log(`- ${file.key}`);
-          console.log(`  Size: ${sizeInMB} MB`);
-          console.log(`  Last Modified: ${new Date(file.lastModified).toLocaleString()}`);
+          console.log(chalk.green(`- ${file.key}`));
+          console.log(chalk.dim(`  Size: ${sizeInMB} MB`));
+          console.log(chalk.dim(`  Last Modified: ${new Date(file.lastModified).toLocaleString()}`));
           console.log('');
         });
       }
     } catch (error) {
-      console.error('Error listing files:', error);
+      console.error(chalk.red('Error listing files:'), error);
       process.exit(1);
     }
+  });
+
   program
   .command('usage')
   .description('Get storage usage for a Shadow Drive bucket')
@@ -149,22 +153,21 @@ program
 
       const usage = await sdk.getBucketUsage(options.bucket);
 
-      console.log('\nBucket Usage:');
-      console.log(`Bucket: ${usage.bucket}`);
+      console.log(chalk.cyan('\nBucket Usage:'));
+      console.log(chalk.dim('Bucket:'), chalk.yellow(usage.bucket));
+      
       const usedMB = (usage.storage_used / (1024 * 1024)).toFixed(2);
-      console.log(`Storage Used: ${usedMB} MB`);
+      console.log(chalk.dim('Storage Used:'), chalk.green(`${usedMB} MB`));
 
       if (usage.storage_used > 1024 * 1024 * 1024) {
         const usedGB = (usage.storage_used / (1024 * 1024 * 1024)).toFixed(2);
-        console.log(`Storage Used: ${usedGB} GB`);
+        console.log(chalk.dim('Storage Used:'), chalk.green(`${usedGB} GB`));
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      console.error('Error getting bucket usage:', errorMessage);
+      console.error(chalk.red('Error getting bucket usage:'), errorMessage);
       process.exit(1);
     }
-  });
-
   });
 
 program.parse();
