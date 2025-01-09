@@ -1,2 +1,2 @@
-import { ShdwDriveSDK } from '@shdw-drive/sdk';
+import { ShdwDriveSDK } from '@shdwdrive/sdk';
 export { ShdwDriveSDK };
