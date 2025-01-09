@@ -6,6 +6,15 @@
 
 A command-line interface for interacting with shdwDrive storage.
 
+## Features
+
+- 📤 File uploads (supports both small and large files)
+- 📥 File deletion
+- 📋 File listing
+- 📊 Bucket usage statistics
+- 🔐 Secure message signing
+- 🔄 Multipart upload support for large files
+
 ## Installation
 
 You can install the CLI globally using npm:
