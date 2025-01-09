@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="assets/shdwdrive-logo.svg" alt="ShdwDrive Logo" width="600"/>
+  <a href="https://shdwdrive.com">
+    <img src="./assets/shdwdrive_Logo.png" alt="ShdwDrive Logo" width="600"/>
+  </a>
 </p>
 
 # shdwDrive CLI
@@ -20,7 +22,7 @@ A command-line interface for interacting with shdwDrive storage.
 You can install the CLI globally using npm:
 
 ```bash
-npm install -g shdw-drive-cli
+npm install -g @shdwdrive/cli
 ```
 
 Or use it directly from the repository:
