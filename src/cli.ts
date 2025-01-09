@@ -1,10 +1,18 @@
 #!/usr/bin/env node
+
+process.emitWarning = (warning, type) => {
+  const warningText = warning instanceof Error ? warning.message : String(warning);
+  if (type === 'DeprecationWarning' && warningText.includes('punycode')) {
+    return;
+  }
+  console.warn(warning);
+};
+
 import { Command } from 'commander';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import { ShdwDriveSDK } from '@shdw-drive/sdk';
 import chalk from 'chalk';
-
 
 const program = new Command();
 
