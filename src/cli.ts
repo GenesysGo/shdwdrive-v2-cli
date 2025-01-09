@@ -11,7 +11,7 @@ process.emitWarning = (warning, type) => {
 import { Command } from 'commander';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
-import { ShdwDriveSDK } from '@shdw-drive/sdk';
+import { ShdwDriveSDK } from '@shdwdrive/sdk';
 import chalk from 'chalk';
 
 const program = new Command();
