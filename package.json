@@ -7,6 +7,9 @@
   "bin": {
     "shdw-drive": "./bin/shdw-drive.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
