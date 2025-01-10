@@ -18,7 +18,7 @@
     "storage",
     "cli"
   ],
-  "author": "Your Name",
+  "author": "GenesysGo",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@project-serum/anchor": "^0.26.0",
