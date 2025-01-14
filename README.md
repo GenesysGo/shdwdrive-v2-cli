@@ -11,7 +11,8 @@ A command-line interface for interacting with shdwDrive storage.
 ## Features
 
 - 📤 File uploads (supports both small and large files)
-- 📥 File deletion
+- 📁 Folder support (create, delete, and manage files in folders)
+- 📥 File and folder deletion
 - 📋 File listing
 - 📊 Bucket usage statistics
 - 🔐 Secure message signing
@@ -44,26 +45,38 @@ The CLI uses environment variables for configuration:
 ## Usage
 
 ### Upload a file
-
 ```bash
 shdw-drive upload \
   --keypair ~/.config/solana/id.json \
   --bucket your-bucket-identifier \
   --file path/to/your/file.txt \
-  --directory optional/directory/path
+  --folder optional/folder/path
 ```
 
 ### Delete a file
-
 ```bash
+# Delete a file from root of bucket
 shdw-drive delete \
   --keypair ~/.config/solana/id.json \
   --bucket your-bucket-identifier \
-  --file file-url-or-path
+  --file filename.txt
+
+# Delete a file from a folder
+shdw-drive delete \
+  --keypair ~/.config/solana/id.json \
+  --bucket your-bucket-identifier \
+  --file folder/subfolder/filename.jpg
+```
+
+### Create a folder
+```bash
+shdw-drive create-folder \
+  --keypair ~/.config/solana/id.json \
+  --bucket your-bucket-identifier \
+  --name my-folder/subfolder
 ```
 
 ### List files in a bucket
-
 ```bash
 shdw-drive list \
   --keypair ~/.config/solana/id.json \
@@ -71,12 +84,34 @@ shdw-drive list \
 ```
 
 ### Check bucket storage usage
-
 ```bash
 shdw-drive usage \
   --keypair ~/.config/solana/id.json \
   --bucket your-bucket-identifier
 ```
+
+## Command Options
+
+### Upload Options
+- `-k, --keypair` - Path to your Solana keypair file
+- `-b, --bucket` - Your bucket identifier
+- `-f, --file` - Path to the file you want to upload
+- `-F, --folder` - (Optional) Folder path within the bucket
+
+### Delete Options
+- `-k, --keypair` - Path to your Solana keypair file
+- `-b, --bucket` - Your bucket identifier
+- `-f, --file` - URL or path of the file to delete
+
+### Create Folder Options
+- `-k, --keypair` - Path to your Solana keypair file
+- `-b, --bucket` - Your bucket identifier
+- `-n, --name` - Name/path of the folder to create
+
+### Delete Folder Options
+- `-k, --keypair` - Path to your Solana keypair file
+- `-b, --bucket` - Your bucket identifier
+- `-p, --path` - Path of the folder to delete
 
 ## Development
 

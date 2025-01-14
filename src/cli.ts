@@ -11,7 +11,7 @@ process.emitWarning = (warning, type) => {
 import { Command } from 'commander';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
-import { ShdwDriveSDK } from '@shdwdrive/sdk';
+import { ShdwDriveSDK, FileUploadProgress } from '@shdwdrive/sdk';
 import chalk from 'chalk';
 
 const program = new Command();
@@ -27,15 +27,14 @@ program
   .requiredOption('-k, --keypair <path>', 'Path to keypair file')
   .requiredOption('-b, --bucket <bucket>', 'Bucket identifier')
   .requiredOption('-f, --file <path>', 'Path to file to upload')
+  .option('-F, --folder <path>', 'Optional folder path within bucket')
   .action(async (options) => {
     try {
       // Load keypair
       const keypairData = JSON.parse(readFileSync(options.keypair, 'utf-8'));
       const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
 
-      // Initialize SDK with more verbose logging
-      console.log('Initializing SDK with keypair:', keypair.publicKey.toString());
-      
+      // Initialize SDK
       const sdk = new ShdwDriveSDK(
         { endpoint: process.env.SHDW_ENDPOINT || 'https://v2.shdwdrive.com' },
         { keypair }
@@ -46,13 +45,26 @@ program
       const fileName = options.file.split('/').pop()!;
       const file = new File([fileBuffer], fileName);
       
+      // Clean up folder path if provided (using the same logic as SDK)
+      const directory = options.folder 
+        ? options.folder.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/')
+        : '';
+      
       console.log(chalk.cyan('\nStarting upload...'));
       console.log(chalk.dim('Bucket:'), chalk.yellow(options.bucket));
       console.log(chalk.dim('File:'), chalk.yellow(fileName));
+      if (directory) {
+        console.log(chalk.dim('Folder:'), chalk.yellow(directory));
+      }
       
       const result = await sdk.uploadFile(options.bucket, file, {
-        onProgress: (progress) => {
-          process.stdout.write(chalk.blue(`Upload progress: ${progress.progress.toFixed(2)}%\r`));
+        directory,
+        onProgress: (progress: FileUploadProgress) => {
+          if (progress.status === 'error') {
+            process.stdout.write(chalk.red('\nUpload encountered an error\n'));
+          } else {
+            process.stdout.write(chalk.blue(`Upload progress: ${progress.progress.toFixed(2)}%\r`));
+          }
         },
       });
 
@@ -174,6 +186,66 @@ program
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       console.error(chalk.red('Error getting bucket usage:'), errorMessage);
+      process.exit(1);
+    }
+  });
+
+  program
+  .command('create-folder')
+  .description('Create a new folder in a Shadow Drive bucket')
+  .requiredOption('-k, --keypair <path>', 'Path to keypair file')
+  .requiredOption('-b, --bucket <bucket>', 'Bucket identifier')
+  .requiredOption('-n, --name <name>', 'Folder name')
+  .action(async (options) => {
+    try {
+      const keypairData = JSON.parse(readFileSync(options.keypair, 'utf-8'));
+      const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
+
+      const sdk = new ShdwDriveSDK(
+        { endpoint: process.env.SHDW_ENDPOINT || 'https://v2.shdwdrive.com' },
+        { keypair }
+      );
+
+      console.log(chalk.cyan('\nCreating folder...'));
+      console.log(chalk.dim('Bucket:'), chalk.yellow(options.bucket));
+      console.log(chalk.dim('Folder name:'), chalk.yellow(options.name));
+
+      const result = await sdk.createFolder(options.bucket, options.name);
+
+      console.log(chalk.green('\n✓ Folder created successfully'));
+      console.log(chalk.dim('Response:'), chalk.cyan(JSON.stringify(result, null, 2)));
+    } catch (error) {
+      console.error(chalk.red('Error creating folder:'), error);
+      process.exit(1);
+    }
+  });
+
+  program
+  .command('delete-folder')
+  .description('Delete a folder from Shadow Drive bucket')
+  .requiredOption('-k, --keypair <path>', 'Path to keypair file')
+  .requiredOption('-b, --bucket <bucket>', 'Bucket identifier')
+  .requiredOption('-p, --path <path>', 'Folder path to delete')
+  .action(async (options) => {
+    try {
+      const keypairData = JSON.parse(readFileSync(options.keypair, 'utf-8'));
+      const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
+
+      const sdk = new ShdwDriveSDK(
+        { endpoint: process.env.SHDW_ENDPOINT || 'https://v2.shdwdrive.com' },
+        { keypair }
+      );
+
+      console.log(chalk.cyan('\nDeleting folder...'));
+      console.log(chalk.dim('Bucket:'), chalk.yellow(options.bucket));
+      console.log(chalk.dim('Folder path:'), chalk.yellow(options.path));
+
+      const result = await sdk.deleteFolder(options.bucket, options.path);
+
+      console.log(chalk.green('\n✓ Folder deleted successfully'));
+      console.log(chalk.dim('Response:'), chalk.cyan(JSON.stringify(result, null, 2)));
+    } catch (error) {
+      console.error(chalk.red('Error deleting folder:'), error);
       process.exit(1);
     }
   });
