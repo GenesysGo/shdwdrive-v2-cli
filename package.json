@@ -7,6 +7,10 @@
   "bin": {
     "shdw-drive": "./bin/shdw-drive.js"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
   "publishConfig": {
     "access": "public"
   },
