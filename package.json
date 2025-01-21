@@ -20,7 +20,7 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "shadow-drive",
+    "shdwdrive",
     "solana",
     "storage",
     "cli"
