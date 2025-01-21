@@ -13,13 +13,18 @@ import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import { ShdwDriveSDK, FileUploadProgress } from '@shdwdrive/sdk';
 import chalk from 'chalk';
+import path from 'path';
+
+const packageJson = JSON.parse(
+  readFileSync(path.resolve(__dirname, '../package.json'), 'utf8')
+);
 
 const program = new Command();
 
 program
   .name('shdw-drive')
   .description('CLI tool for Shadow Drive file operations')
-  .version('1.0.0');
+  .version(packageJson.version);
 
   program
   .command('upload')
